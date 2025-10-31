@@ -13,7 +13,7 @@ use serde_json::{Map, Value};
 pub trait CrossMediaPlayer {
     fn new() -> Self;
 
-    fn mediadata(&self) -> Option<MediaData>;
+    fn mediadata(&self, report_paused: bool) -> Option<MediaData>;
 }
 
 pub struct MediaData {
@@ -22,6 +22,7 @@ pub struct MediaData {
     title: Option<String>,
     uri: Option<String>,
     pub player: String,
+    pub status: Option<String>,
 }
 
 impl MediaData {
@@ -29,6 +30,9 @@ impl MediaData {
         let mut data = Map::new();
 
         data.insert("player".to_string(), Value::String(self.player.to_string()));
+        if let Some(status) = &self.status {
+            data.insert("status".to_string(), Value::String(status.to_string()));
+        }
         if let Some(artists) = &self.artists {
             let artists = artists.join(", ");
             if !artists.is_empty() {

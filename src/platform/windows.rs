@@ -12,7 +12,7 @@ impl CrossMediaPlayer for MediaPlayer {
         Self {}
     }
 
-    fn mediadata(&self) -> Option<MediaData> {
+    fn mediadata(&self, report_paused: bool) -> Option<MediaData> {
         let session_manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
             .expect("Failed to request media session manager")
             .get()
@@ -22,7 +22,11 @@ impl CrossMediaPlayer for MediaPlayer {
 
         let status = session.GetPlaybackInfo().ok()?.PlaybackStatus().ok()?;
         if status != GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
-            return None;
+            if !report_paused
+                || status != GlobalSystemMediaTransportControlsSessionPlaybackStatus::Paused
+            {
+                return None;
+            }
         }
 
         let properties = session.TryGetMediaPropertiesAsync().ok()?.get().ok()?;
@@ -38,6 +42,7 @@ impl CrossMediaPlayer for MediaPlayer {
             title,
             uri: None,
             player,
+            status: Some(format!("{status:?}")),
         })
     }
 }
