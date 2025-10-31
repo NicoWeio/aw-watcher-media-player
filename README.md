@@ -20,6 +20,7 @@ Spotify in Linux:
   "album": "How to Measure a Planet? (Deluxe Edition)",
   "artist": "The Gathering",
   "player": "Spotify",
+  "status": "Playing",
   "title": "My Electricity",
   "uri": "https://open.spotify.com/track/1cSWc2kX4z39L5uFdGcjFP"
 }
@@ -29,6 +30,7 @@ Firefox in Linux (no plugins):
 {
     "artist": "Eileen",
     "player": "Mozilla Firefox",
+    "status": "Playing",
     "title": "🇺🇦 🇵🇱 Гей, соколи! / Hej, sokoły! – Ukrainian/Polish folk song"
 }
 ```
@@ -37,6 +39,7 @@ MS Edge in Windows:
 {
   "artist": "Bel Canto Choir Vilnius",
   "player": "MSEdge",
+  "status": "Playing",
   "title": "Shchedryk (Carol of the Bells) – Bel Canto Choir Vilnius"
 }
 ```
@@ -46,9 +49,12 @@ Default Windows player
   "album": "Zemlya",
   "artist": "Okean Elzy",
   "player": "Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic",
+  "status": "Playing",
   "title": "Obijmy"
 }
 ```
+
+**Note**: The `status` field indicates the playback state (e.g., "Playing" or "Paused"). When `report_paused` is enabled, paused media will also be reported with `"status": "Paused"`.
 
 </details>
 
@@ -79,9 +85,21 @@ host = "localhost"
 poll_time = 5
 include_players = ["Spotify", "firefox", "chrom"]
 exclude_players = ["chromium"]
+report_paused = false
 ```
 Filter options for including and excluding players for reporting look for a case-insensitive substring.
 Use `-vv` to see what's reported.
+
+### Configuration Options
+
+- `port` - ActivityWatch server port (default: 5600)
+- `host` - ActivityWatch server host (default: "localhost")
+- `poll_time` - Interval in seconds to poll media status (default: 5)
+- `include_players` - List of players to report (empty = all players)
+- `exclude_players` - List of players to exclude from reporting
+- `report_paused` - Report paused media in addition to playing media (default: false)
+
+The `report_paused` option can also be enabled via CLI flag: `--report-paused`
 
 **Note that normally browsers report the currently playing media to the system even in a private mode/tab/window.**
 

@@ -20,6 +20,10 @@ fn default_poll_time() -> u64 {
     5
 }
 
+fn default_report_paused() -> bool {
+    false
+}
+
 #[derive(Parser, Debug)]
 #[clap(author, version, about = "Watcher to report the currently playing media to ActivityWatch.", long_about = None)]
 pub struct Cli {
@@ -52,6 +56,11 @@ pub struct Cli {
     #[clap(long, value_name = "PLAYERS", use_value_delimiter = true)]
     exclude_players: Vec<String>,
 
+    /// Report paused media in addition to playing media.
+    /// Defaults to false if not specified.
+    #[clap(long, action = clap::ArgAction::SetTrue)]
+    report_paused: bool,
+
     #[command(flatten)]
     pub verbosity: Verbosity,
 }
@@ -68,6 +77,8 @@ struct Toml {
     include_players: Vec<String>,
     #[serde(default = "Vec::new")]
     exclude_players: Vec<String>,
+    #[serde(default = "default_report_paused")]
+    report_paused: bool,
 }
 
 impl Toml {
@@ -105,6 +116,7 @@ pub struct Config {
     pub poll_interval: Duration,
     pub include_players: Vec<String>,
     pub exclude_players: Vec<String>,
+    pub report_paused: bool,
 }
 
 impl Config {
@@ -129,6 +141,7 @@ impl Config {
             poll_interval: Duration::from_secs(cli.poll_interval.unwrap_or(toml_data.poll_time)),
             include_players,
             exclude_players,
+            report_paused: cli.report_paused || toml_data.report_paused,
         }
     }
 

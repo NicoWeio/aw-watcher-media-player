@@ -44,10 +44,11 @@ async fn main() -> anyhow::Result<()> {
     let terminate = std::future::pending::<()>();
 
     let mut interval = time::interval(config.poll_interval);
+    let report_paused = config.report_paused;
     let run = async move {
         loop {
             interval.tick().await;
-            let data = media_player.mediadata();
+            let data = media_player.mediadata(report_paused);
             if let Some(data) = data {
                 if config.report_player(&data.player) {
                     watcher.send_active_window(&data).await.unwrap();

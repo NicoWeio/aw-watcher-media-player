@@ -7,7 +7,7 @@ use super::CrossMediaPlayer;
 use super::MediaData;
 
 pub struct MediaPlayer {
-    sender: mpsc::Sender<()>,
+    sender: mpsc::Sender<bool>,
     receiver: mpsc::Receiver<Option<MediaData>>,
     handler: thread::JoinHandle<()>,
 }
@@ -20,9 +20,9 @@ impl CrossMediaPlayer for MediaPlayer {
         let handler = thread::spawn(move || {
             let player_finder = PlayerFinder::new().expect("MPRIS is unavailable");
 
-            while let Ok(()) = rx.recv() {
+            while let Ok(report_paused) = rx.recv() {
                 resp_tx
-                    .send(mediadata(&player_finder))
+                    .send(mediadata(&player_finder, report_paused))
                     .expect("Failed to send media data");
             }
         });
@@ -34,21 +34,25 @@ impl CrossMediaPlayer for MediaPlayer {
         }
     }
 
-    fn mediadata(&self) -> Option<MediaData> {
+    fn mediadata(&self, report_paused: bool) -> Option<MediaData> {
         assert!(
             !self.handler.is_finished(),
             "The media data cannot be retrieved anymore"
         );
 
-        self.sender.send(()).expect("Failed to request media data");
+        self.sender
+            .send(report_paused)
+            .expect("Failed to request media data");
         self.receiver.recv().expect("Failed to receive media data")
     }
 }
 
-fn mediadata(player_finder: &PlayerFinder) -> Option<MediaData> {
+fn mediadata(player_finder: &PlayerFinder, report_paused: bool) -> Option<MediaData> {
     let player = player_finder.find_active().ok()?;
 
-    if player.get_playback_status().ok()? != PlaybackStatus::Playing {
+    let status = player.get_playback_status().ok()?;
+
+    if status != PlaybackStatus::Playing && (!report_paused || status != PlaybackStatus::Paused) {
         trace!(
             "Player {} is not playing with status {}",
             player.bus_name(),
@@ -57,7 +61,6 @@ fn mediadata(player_finder: &PlayerFinder) -> Option<MediaData> {
                 .map(|status| format!("{status:?}"))
                 .unwrap_or("not found".to_string())
         );
-
         return None;
     }
 
@@ -76,6 +79,7 @@ fn mediadata(player_finder: &PlayerFinder) -> Option<MediaData> {
         album: metadata.album_name().map(std::string::ToString::to_string),
         title: metadata.title().map(std::string::ToString::to_string),
         uri: metadata.url().map(std::string::ToString::to_string),
+        status: Some(format!("{status:?}")),
         artists: if let Some(artists) = metadata.artists() {
             Some(
                 artists
